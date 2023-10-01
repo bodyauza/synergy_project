@@ -32,11 +32,8 @@ class Refresh:
         self.delete(1.0, "end")
         cur.execute("SELECT joke FROM Jokes ORDER BY RANDOM() LIMIT 1;")
         result = str(cur.fetchall())
-        result = result.replace('[', ' ')
-        result = result.replace(']', ' ')
-        result = result.replace('(', ' ')
-        result = result.replace(',)', ' ')
-        self.insert(1.0, result)
+        result = result.replace('[', ' ').replace(']', ' ').replace('(', ' ').replace(',)', ' ')
+        self.insert(0.0, result)
 
 
 root = Tk()

@@ -7,6 +7,12 @@ class Main(tk.Frame):
     def __init__(self, root):
         super().__init__(root)
         self.widgets()
+        self.db = db
+        self.view_records()
+
+    def records(self, name, tel, email):
+        self.db.insert_data(name, tel, email)
+        self.view_records()
 
     def widgets(self):
         toolbar = tk.Frame(bg='#d7d8e0', bd=2)
@@ -17,7 +23,6 @@ class Main(tk.Frame):
         btn_open_dialog.pack(side=tk.LEFT)
 
         # добавляем таблицу
-        # columns - столбцы
         # height - высота таблицы
         # show='headings' - скрывает нулевую (пустую) колонку таблицы
         self.tree = ttk.Treeview(self, columns=('ID', 'name', 'tel', 'email'), height=45, show='headings')
@@ -41,10 +46,22 @@ class Main(tk.Frame):
     def open_dialog(self):
         Child()
 
+    # вывод данных в виджет таблицы
+    def view_records(self):
+        self.db.cur.execute("""SELECT * FROM employees""")
+        # удаляем все из виджета таблицы
+        [self.tree.delete(i) for i in self.tree.get_children()]
+        # добавляем в виджет таблицы всю информацию из БД
+        [self.tree.insert('', 'end', values=row)
+         for row in self.db.cur.fetchall()]
 
-class Child(tk.Toplevel):  # Toplevel, который будет представлять собой кастомное окно
+
+class Child(tk.Toplevel):  # Toplevel, который будет представлять собой дочернее окно
     def __init__(self):
         super().__init__(root)
+        self.init_child()
+        # обращаемся к классу Main
+        self.view = app
 
     def init_child(self):
         self.title('Добавить')
@@ -71,17 +88,38 @@ class Child(tk.Toplevel):  # Toplevel, который будет предста�
         self.entry_numb.place(x=200, y=110)
 
         # кнопка закрытия дочернего окна
-        self.btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy())
+        self.btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
         self.btn_cancel.place(x=300, y=170)
 
         # кнопка добавления
         self.btn_add = ttk.Button(self, text='Добавить')
-        self.btn_ok.place(x=220, y=170)
-        self.btn_add.bind('<Button-1>')
+        self.btn_add.place(x=220, y=170)
+        self.btn_add.bind('<Button-1>', lambda event: self.view.records(self.entry_name.get(),
+                                                                        self.entry_numb.get(),
+                                                                        self.entry_email.get()))
+
+
+class DB():
+    def __init__(self):
+        self.conn = sqlite3.connect('Synergy.db')
+        self.cur = self.conn.cursor()
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS employees (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        tel TEXT,
+        email TEXT);
+        """)
+        self.conn.commit()
+
+    def insert_data(self, name, tel, email):
+        self.cur.execute("""INSERT INTO employees (name, tel, email) VALUES(?, ?, ?)""",
+                         (name, tel, email))
+        self.conn.commit()
 
 
 if __name__ == '__main__':
     root = tk.Tk()
+    db = DB()
     app = Main(root)
     root.title('Список сотрудников компании')
     root.geometry('665x450')

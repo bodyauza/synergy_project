@@ -10,12 +10,32 @@ class Main(tk.Frame):
         self.db = db
         self.view_records()
 
+    def search_records(self, name):
+        name = ('%' + name + '%')
+        self.db.cur.execute("""SELECT * FROM employees
+        WHERE name LIKE ?""", (name,))
+
+        # удаления данных таблицы в момент поиска
+        [self.tree.delete(i) for i in self.tree.get_children()]
+        # вывод искомых данных
+        [self.tree.insert('', 'end', values=row) for row in self.db.cur.fetchall()]
+
+    def open_search_dialog(self):
+        Search()
+
+    def delete_records(self):
+        for selection_item in self.tree.selection():
+            self.db.cur.execute("""DELETE FROM employees
+            WHERE id=?""", (self.tree.set(selection_item, '#1')))
+            self.db.conn.commit()
+            self.view_records()
+
+    # изменение данных сотрудника
     def update_record(self, name, tel, email):
         self.db.cur.execute("""UPDATE employees SET name=?, tel=?, email=?
         WHERE ID=?""", (name, tel, email,
                         # устанавливаем фокус на первый столбец выделенной строки (ID)
                         self.tree.set(self.tree.selection()[0], '#1')))
-
         self.db.conn.commit()
         self.view_records()
 
@@ -55,11 +75,32 @@ class Main(tk.Frame):
 
         self.tree.pack(side=tk.LEFT)
 
-        # создание кнопки изменения данных
+        # кнопка изменения данных
         self.update_img = tk.PhotoImage(file='images/update.png')
         btn_edit_dialog = tk.Button(toolbar, bg='#d7d8e0', bd=0, image=self.update_img,
                                     command=self.open_update_dialog)
         btn_edit_dialog.pack(side=tk.LEFT)
+
+        # кнопка удаления записи
+        self.delete_img = tk.PhotoImage(file='images/delete.png')
+        btn_delete = tk.Button(toolbar, bg='#d7d8e0', bd=0,
+                               image=self.delete_img,
+                               command=self.delete_records)
+        btn_delete.pack(side=tk.LEFT)
+
+        # кнопка поиска записи
+        self.search_img = tk.PhotoImage(file='images/search.png')
+        btn_search = tk.Button(toolbar, bg='#d7d8e0', bd=0,
+                               image=self.search_img,
+                               command=self.open_search_dialog)
+        btn_search.pack(side=tk.LEFT)
+
+        # обновление данных
+        self.refresh_img = tk.PhotoImage(file='images/refresh.png')
+        btn_refresh = tk.Button(toolbar, bg='#d7d8e0', bd=0,
+                               image=self.refresh_img,
+                               command=self.view_records)
+        btn_refresh.pack(side=tk.LEFT)
 
     def open_dialog(self):
         Child()
@@ -148,6 +189,29 @@ class Update(Child):
         self.entry_name.insert(0, row[1])
         self.entry_tel.insert(0, row[2])
         self.entry_email.insert(0, row[3])
+
+
+class Search(tk.Toplevel):
+    def __init__(self):
+        super().__init__()
+        self.init_search()
+        self.view = app
+
+    def init_search(self):
+        self.title('Поиск')
+        self.geometry('300x100')
+        self.resizable(False, False)
+        label_search = tk.Label(self, text='Поиск')
+        label_search.place(x=50, y=20)
+        self.entry_search = ttk.Entry(self)
+        self.entry_search.place(x=105, y=20, width=150)
+        btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
+        btn_cancel.place(x=185, y=50)
+
+        btn_search = ttk.Button(self, text='Поиск')
+        btn_search.place(x=105, y=50)
+        btn_search.bind('<Button-1>', lambda event: self.view.search_records(self.entry_search.get()))
+        btn_search.bind('<Button-1>', lambda event: self.destroy(), add='+')
 
 
 class DB():

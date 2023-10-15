@@ -1,12 +1,14 @@
+<h1 align="center">Итоговый проект курса: "Разработка
+на Python"</h1> 
+
 Шаблон, который я использую, выглядит следующим образом:
+<code>class App(tk.Frame):<br>
+     def __init__(self, root):<br>
+        super().__init__(root)<br>
+        <your widgets go here><br>
 
-`class App(tk.Frame):
-     def __init__(self, root):
-        super().__init__(root)
-        <your widgets go here>
-
-if name == "main":
-    root = tk.Tk()
-    app = App(root)
-    app.pack(fill="both", expand=True)
-    root.mainloop()`
+if name == "main":<br>
+    root = tk.Tk()<br>
+    app = App(root)<br>
+    app.pack(fill="both", expand=True)<br>
+    root.mainloop()<code>

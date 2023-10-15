@@ -10,6 +10,18 @@ class Main(tk.Frame):
         self.db = db
         self.view_records()
 
+    def update_record(self, name, tel, email):
+        self.db.cur.execute("""UPDATE employees SET name=?, tel=?, email=?
+        WHERE ID=?""", (name, tel, email,
+                        # устанавливаем фокус на первый столбец выделенной строки (ID)
+                        self.tree.set(self.tree.selection()[0], '#1')))
+
+        self.db.conn.commit()
+        self.view_records()
+
+    def open_update_dialog(self):
+        Update()
+
     def records(self, name, tel, email):
         self.db.insert_data(name, tel, email)
         self.view_records()
@@ -25,7 +37,7 @@ class Main(tk.Frame):
         # добавляем таблицу
         # height - высота таблицы
         # show='headings' - скрывает нулевую (пустую) колонку таблицы
-        self.tree = ttk.Treeview(self, columns=('ID', 'name', 'tel', 'email'), height=45, show='headings')
+        self.tree = ttk.Treeview(columns=('ID', 'name', 'tel', 'email'), height=45, show='headings')
 
         # добавляем параметры колонкам
         # width - ширина
@@ -42,6 +54,12 @@ class Main(tk.Frame):
         self.tree.heading("email", text='Email')
 
         self.tree.pack(side=tk.LEFT)
+
+        # создание кнопки изменения данных
+        self.update_img = tk.PhotoImage(file='images/update.png')
+        btn_edit_dialog = tk.Button(toolbar, bg='#d7d8e0', bd=0, image=self.update_img,
+                                    command=self.open_update_dialog)
+        btn_edit_dialog.pack(side=tk.LEFT)
 
     def open_dialog(self):
         Child()
@@ -72,8 +90,8 @@ class Child(tk.Toplevel):  # Toplevel, который будет предста�
 
         label_name = tk.Label(self, text='ФИО:')
         label_name.place(x=50, y=50)
-        label_numb = tk.Label(self, text='Телефон')
-        label_numb.place(x=50, y=80)
+        label_tel = tk.Label(self, text='Телефон')
+        label_tel.place(x=50, y=80)
         label_email = tk.Label(self, text='Email')
         label_email.place(x=50, y=110)
 
@@ -84,8 +102,8 @@ class Child(tk.Toplevel):  # Toplevel, который будет предста�
         self.entry_email = ttk.Entry(self)
         self.entry_email.place(x=200, y=80)
 
-        self.entry_numb = ttk.Entry(self)
-        self.entry_numb.place(x=200, y=110)
+        self.entry_tel = ttk.Entry(self)
+        self.entry_tel.place(x=200, y=110)
 
         # кнопка закрытия дочернего окна
         self.btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
@@ -95,8 +113,41 @@ class Child(tk.Toplevel):  # Toplevel, который будет предста�
         self.btn_add = ttk.Button(self, text='Добавить')
         self.btn_add.place(x=220, y=170)
         self.btn_add.bind('<Button-1>', lambda event: self.view.records(self.entry_name.get(),
-                                                                        self.entry_numb.get(),
+                                                                        self.entry_tel.get(),
                                                                         self.entry_email.get()))
+
+
+class Update(Child):
+    def __init__(self):
+        super().__init__()
+        self.init_edit()
+        self.view = app
+        self.db = db
+        self.default_data()
+
+    def init_edit(self):
+        self.title('Редактировать позицию')
+        btn_edit = ttk.Button(self, text='Редактировать')
+        btn_edit.place(x=205, y=170)
+        btn_edit.bind('<Button-1>', lambda event: self.view.update_record(
+            self.entry_name.get(),
+            self.entry_tel.get(),
+            self.entry_email.get()
+        ))
+        # закрываем окно редактирования
+        # add='+' добавляет возможность 'повесить' на кнопку более одного события
+        btn_edit.bind('<Button-1>', lambda event: self.destroy(), add='+')
+        self.btn_add.destroy()
+
+    # подгрузка данных в форму для рекдактирования
+    def default_data(self):
+        self.db.cur.execute("""SELECT * FROM employees WHERE id=?""",
+                            (self.view.tree.set(self.view.tree.selection()[0], '#1')))
+        # получаем доступ к первой записи из выборки
+        row = self.db.cur.fetchone()
+        self.entry_name.insert(0, row[1])
+        self.entry_tel.insert(0, row[2])
+        self.entry_email.insert(0, row[3])
 
 
 class DB():

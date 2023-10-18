@@ -1,6 +1,7 @@
 import sqlite3
 import tkinter as tk
 from tkinter import ttk
+import re
 
 
 class Main(tk.Frame):
@@ -9,6 +10,7 @@ class Main(tk.Frame):
         self.widgets()
         self.db = db
         self.view_records()
+        self.check = check
 
     def search_records(self, name):
         name = ('%' + name + '%')
@@ -43,8 +45,10 @@ class Main(tk.Frame):
         Update()
 
     def records(self, name, tel, email):
-        self.db.insert_data(name, tel, email)
-        self.view_records()
+        if check.isValidTel(tel) and check.isValidEmail(email)\
+                and check.isValidName(name):
+            self.db.insert_data(name, tel, email)
+            self.view_records()
 
     def widgets(self):
         toolbar = tk.Frame(bg='#d7d8e0', bd=2)
@@ -98,8 +102,8 @@ class Main(tk.Frame):
         # обновление данных
         self.refresh_img = tk.PhotoImage(file='images/refresh.png')
         btn_refresh = tk.Button(toolbar, bg='#d7d8e0', bd=0,
-                               image=self.refresh_img,
-                               command=self.view_records)
+                                image=self.refresh_img,
+                                command=self.view_records)
         btn_refresh.pack(side=tk.LEFT)
 
     def open_dialog(self):
@@ -131,9 +135,9 @@ class Child(tk.Toplevel):  # Toplevel, который будет предста�
 
         label_name = tk.Label(self, text='ФИО:')
         label_name.place(x=50, y=50)
-        label_tel = tk.Label(self, text='Телефон')
+        label_tel = tk.Label(self, text='Email')
         label_tel.place(x=50, y=80)
-        label_email = tk.Label(self, text='Email')
+        label_email = tk.Label(self, text='Телефон')
         label_email.place(x=50, y=110)
 
         # добавлем строку ввода для ФИО
@@ -232,8 +236,32 @@ class DB():
         self.conn.commit()
 
 
+class Check():
+    def isValidName(self, name):
+        pattern_name = re.compile(r'[А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+)?')
+        if re.match(pattern_name, name):
+            return True
+        else:
+            print('Uncorrected name')
+
+    def isValidTel(self, number):
+        pattern_tel = re.compile(r'(\+7|8).*?(\d{2,3}).*?(\d{2,3}).*?(\d{2}).*?(\d{2})')
+        if re.match(pattern_tel, number):
+            return True
+        else:
+            print('Uncorrected number')
+
+    def isValidEmail(self, email):
+        pattern_email = re.compile(r'[\w\.-]+@[\w\.-]+')
+        if re.match(pattern_email, email):
+            return True
+        else:
+            print('Uncorrected email')
+
+
 if __name__ == '__main__':
     root = tk.Tk()
+    check = Check()
     db = DB()
     app = Main(root)
     root.title('Список сотрудников компании')
